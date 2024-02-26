@@ -1,0 +1,6 @@
+input: (1, 32, 32, 3)
+output: (2,)
+
+classes = ['fake' 'real']
+
+source - https://github.com/jomariya23156/face-recognition-with-liveness-web-login
