@@ -1,9 +1,13 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+from scipy.special import softmax
+from modules import FaceDetector
+from modules.utils import CropImage
 
-model = tf.keras.models.load_model("livenes_models/model")
-classes = ['fake', 'real']
+model = tf.keras.models.load_model("models/untispoofing")
+face_detector = FaceDetector()
+crop_image = CropImage()
 
 cap = cv2.VideoCapture(0)
 
@@ -19,18 +23,22 @@ while True:
         break
     # Our operations on the frame come here
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    in_img = cv2.resize(img, (32, 32))
-    in_img = in_img.astype('float') / 255.0
-    in_img = tf.keras.preprocessing.image.img_to_array(in_img)
-    
-    in_img = np.expand_dims(in_img, axis=0)
-    pred = model(in_img)
-    idx = np.argmax(pred.numpy())
+    try:
+        x1, y1, x2, y2 = face_detector.detecFace(img)
+        
+        crop = crop_image.crop(img, (x1, y1, x2 - x1, y2 - y1))
+        
+        batch_img = np.expand_dims(crop, axis=0)
+        pred = model(batch_img)
+        softmax_data = softmax(pred.numpy())
 
-    print(pred)
-    # Display the resulting frame
+        idx = softmax_data.argmax()
+        print(idx)
+        # Display the resulting frame
+    except:
+        print("Not Detect Face!")
     cv2.imshow('frame', cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+
     if cv2.waitKey(1) == ord('q'):
         break
 # When everything done, release the capture
